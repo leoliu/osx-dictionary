@@ -12,7 +12,7 @@ from __future__ import absolute_import, print_function, division
 from DictionaryServices import DCSCopyTextDefinition
 
 
-# See also http://goo.gl/ZbhhkA
+# See also http://goo.gl/ZbhhkA and http://goo.gl/93Eq5W
 def get_definition(phrase):
     """Get the definition of phrase."""
     phrase = phrase.decode('utf-8')

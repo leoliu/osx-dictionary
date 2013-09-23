@@ -59,8 +59,7 @@
           (buffer-string))))))
 
 (defun osx-dictionary-break-longlines ()
-  (let ((inhibit-read-only t)
-        (width (max fill-column 70)))
+  (let ((width (max fill-column 70)))
     (goto-char (point-min))
     (forward-line 3)
     (when (looking-at-p "[^ \t]+$")
@@ -75,8 +74,7 @@
 
 (defun osx-dictionary-fontify (re face &optional sub fn)
   (goto-char (point-min))
-  (let ((inhibit-read-only t)
-        (sub (or sub 0)))
+  (let ((sub (or sub 0)))
     (while (re-search-forward re nil t)
       (when face
         (put-text-property (match-beginning sub) (match-end sub) 'face face))
@@ -102,11 +100,8 @@
             nil nil word))))
   (let ((definition (or (osx-dictionary-get-definition phrase)
                         (user-error "No definition found for `%s'" phrase))))
-    (help-setup-xref (list #'osx-dictionary phrase)
-                     (called-interactively-p 'interactive))
-    (with-help-window (help-buffer)
-      (princ definition))
-    (with-current-buffer (help-buffer)
+    (with-temp-buffer
+      (insert definition)
       (osx-dictionary-fontify
        "\\`\\(.*?\\)[ 0-9]*$"           ; skip superscripts
        nil nil
@@ -139,7 +134,15 @@
                                   (goto-char end)
                                   (fill-region beg end)
                                   (insert "\n"))))
-      (osx-dictionary-break-longlines))))
+      (osx-dictionary-break-longlines)
+      ;;
+      ;; Put the formatted text in the help-buffer.
+      (let ((buf (current-buffer)))
+        (help-setup-xref (list #'osx-dictionary phrase)
+                         (called-interactively-p 'interactive))
+        (with-help-window (help-buffer)
+          (with-current-buffer (help-buffer)
+            (buffer-swap-text buf)))))))
 
 ;;; Examples
 ;; (osx-dictionary "call")
