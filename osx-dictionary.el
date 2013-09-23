@@ -35,6 +35,9 @@
     (let* ((buffer (get-buffer-create " *osxdict*"))
            (proc (if (comint-check-proc buffer)
                      (get-buffer-process buffer)
+                   (with-current-buffer buffer
+                     ;; Erase, or re-search-backward will succeed falsely.
+                     (let ((inhibit-read-only t)) (erase-buffer)))
                    (let ((proc (comint-exec-1 "osxdict" buffer "osxdict.py" nil)))
                      (with-current-buffer (process-buffer proc)
                        (comint-mode)
@@ -43,7 +46,7 @@
                        (setq-local comint-prompt-regexp "^DICT> *")
                        (message "Waiting for osxdict to be ready")
                        (loop repeat 10
-                             while (not (re-search-forward
+                             while (not (re-search-backward
                                          comint-prompt-regexp nil t))
                              do (sit-for 0.1)))
                      proc))))
@@ -146,6 +149,7 @@
 
 ;;; Examples
 ;; (osx-dictionary "call")
+;; (osx-dictionary "HTML")
 ;; (osx-dictionary "fold")
 ;; (osx-dictionary "skip")
 ;; (osx-dictionary "break")
