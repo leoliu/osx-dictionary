@@ -111,14 +111,17 @@
        "\\`\\(.*?\\)[ 0-9]*$"           ; skip superscripts
        nil nil
        (lambda (beg _end)
-         (let ((end (match-end 1)))
+         (let ((end (match-end 1))
+               (action (lambda (b)
+                         (osx-dictionary-open
+                          (buffer-substring-no-properties
+                           (button-start b) (button-end b))))))
            (make-text-button
             beg end
+            'follow-link t
             'help-echo (format "Visit dict://%s" (buffer-substring beg end))
-            'action (lambda (b)
-                      (osx-dictionary-open
-                       (buffer-substring-no-properties
-                        (button-start b) (button-end b)))))
+            'mouse-action action
+            'action action)
            ;; Avoid infinite loop.
            (forward-line 1))))
       (osx-dictionary-fontify "|[^|\n]+|" font-lock-keyword-face)
