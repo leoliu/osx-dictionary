@@ -73,9 +73,11 @@
 (defun osx-dictionary-break-longlines ()
   (let ((width (max fill-column 70)))
     (goto-char (point-min))
-    (forward-line 3)
-    (when (looking-at-p "[^ \t]+$")
-      (forward-line 1))
+    (forward-line 1)
+    (loop repeat 3
+          while (or (eq (char-after) ?|)
+                    (save-excursion (forward-word) (eolp)))
+          do (forward-line 1))
     (fill-region (point-min) (point))
     (while (not (eobp))
       (end-of-line)
@@ -106,7 +108,7 @@
   (with-temp-buffer
     (insert text)
     (osx-dictionary-fontify
-     "\\`\\(.*?\\)[ 0-9]*$" ; skip superscripts
+     "\\`\\(.*?\\)[ 0-9]*$"             ; skip superscripts
      nil nil
      (lambda (beg _end)
        (let ((end (match-end 1))
@@ -126,17 +128,30 @@
     (osx-dictionary-fontify "^(\n\\([^)]+\\)\n) ?$" 'bold 1 #'fill-region)
     (let ((case-fold-search nil))
       (osx-dictionary-fontify "^[A-Z]\\{3,\\}" 'italic))
-    (osx-dictionary-fontify "^\\([0-9]+ \\)\n\\(?:.\\|\n\\)+?\\(?:: \\|[.;]\\)$"
-                            nil nil
-                            (lambda (beg end)
-                              (let ((end (copy-marker end t)))
-                                (goto-char (match-beginning 1))
-                                (forward-line 1)
-                                (insert (make-string
-                                         (length (match-string 1)) ?\s))
-                                (goto-char end)
-                                (fill-region beg end)
-                                (insert "\n"))))
+    (osx-dictionary-fontify
+     "^\\([0-9]+ \\)\n\\(?:.\\|\n\\)+?\\([:.;]\\) *$"
+     nil nil
+     (lambda (beg end)
+       (if (and (eq (char-after (match-beginning 2)) ?.)
+                (progn
+                  (goto-char (match-beginning 2))
+                  (save-match-data (let ((case-fold-search nil))
+                                     (looking-back "\\bBrit\\|\\bAmer")))))
+           (progn
+             (end-of-line)
+             (delete-char 1)
+             (just-one-space)
+             (goto-char (match-beginning 0)))
+         (let ((end (copy-marker end t)))
+           (when (and (equal (match-string 2) ":")
+                      (eq (char-after (1+ end)) ?\())
+             (move-marker end (line-end-position 2)))
+           (goto-char (match-beginning 1))
+           (forward-line 1)
+           (insert (make-string (length (match-string 1)) ?\s))
+           (goto-char end)
+           (fill-region beg end)
+           (insert "\n")))))
     (osx-dictionary-break-longlines)
     (buffer-string)))
 
@@ -158,15 +173,6 @@
     (with-help-window (help-buffer)
       (with-current-buffer standard-output
         (insert text)))))
-
-;;; Examples
-;; (osx-dictionary "call")
-;; (osx-dictionary "HTML")
-;; (osx-dictionary "fold")
-;; (osx-dictionary "skip")
-;; (osx-dictionary "break")
-;; (osx-dictionary "attribute")
-;; (osx-dictionary "while")
 
 (provide 'osx-dictionary)
 ;;; osx-dictionary.el ends here
