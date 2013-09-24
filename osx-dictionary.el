@@ -98,63 +98,66 @@
     (if (fboundp 'do-applescript)
         (do-applescript
          (string-to-multibyte
-          (format "tell application \"Finder\" to open location %s"
-                  (prin1-to-string (url-encode-url uri)))))
+          (format "tell application \"Finder\" to open location %S"
+                  (url-encode-url uri))))
       (call-process "open" nil nil nil uri))))
 
+(defun osx-dictionary-format-definition (text)
+  (with-temp-buffer
+    (insert text)
+    (osx-dictionary-fontify
+     "\\`\\(.*?\\)[ 0-9]*$" ; skip superscripts
+     nil nil
+     (lambda (beg _end)
+       (let ((end (match-end 1))
+             (action (lambda (b)
+                       (osx-dictionary-open
+                        (buffer-substring-no-properties
+                         (button-start b) (button-end b))))))
+         (make-text-button
+          beg end
+          'follow-link t
+          'help-echo (format "Visit dict://%s" (buffer-substring beg end))
+          'mouse-action action
+          'action action)
+         ;; Avoid infinite loop.
+         (forward-line 1))))
+    (osx-dictionary-fontify "|[^|\n]+|" font-lock-keyword-face)
+    (osx-dictionary-fontify "^(\n\\([^)]+\\)\n) ?$" 'bold 1 #'fill-region)
+    (let ((case-fold-search nil))
+      (osx-dictionary-fontify "^[A-Z]\\{3,\\}" 'italic))
+    (osx-dictionary-fontify "^\\([0-9]+ \\)\n\\(?:.\\|\n\\)+?\\(?:: \\|[.;]\\)$"
+                            nil nil
+                            (lambda (beg end)
+                              (let ((end (copy-marker end t)))
+                                (goto-char (match-beginning 1))
+                                (forward-line 1)
+                                (insert (make-string
+                                         (length (match-string 1)) ?\s))
+                                (goto-char end)
+                                (fill-region beg end)
+                                (insert "\n"))))
+    (osx-dictionary-break-longlines)
+    (buffer-string)))
+
 ;;;###autoload
-(defun osx-dictionary (phrase)
+(defun osx-dictionary (phrase &optional raw)
   "Look up PHRASE in the builtin dictionary."
   (interactive
    (let ((word (current-word nil t)))
      (list (read-string
             (format (if word "Phrase (default `%s'): " "Phrase: ") word)
-            nil nil word))))
-  (let ((definition (or (osx-dictionary-get-definition phrase)
-                        (user-error "No definition found for `%s'" phrase))))
-    (with-temp-buffer
-      (insert definition)
-      (osx-dictionary-fontify
-       "\\`\\(.*?\\)[ 0-9]*$"           ; skip superscripts
-       nil nil
-       (lambda (beg _end)
-         (let ((end (match-end 1))
-               (action (lambda (b)
-                         (osx-dictionary-open
-                          (buffer-substring-no-properties
-                           (button-start b) (button-end b))))))
-           (make-text-button
-            beg end
-            'follow-link t
-            'help-echo (format "Visit dict://%s" (buffer-substring beg end))
-            'mouse-action action
-            'action action)
-           ;; Avoid infinite loop.
-           (forward-line 1))))
-      (osx-dictionary-fontify "|[^|\n]+|" font-lock-keyword-face)
-      (osx-dictionary-fontify "^(\n\\([^)]+\\)\n) ?$" 'bold 1 #'fill-region)
-      (let ((case-fold-search nil))
-        (osx-dictionary-fontify "^[A-Z]\\{3,\\}" 'italic))
-      (osx-dictionary-fontify "^\\([0-9]+ \\)\n\\(?:.\\|\n\\)+?\\(?:: \\|[.;]\\)$"
-                              nil nil
-                              (lambda (beg end)
-                                (let ((end (copy-marker end t)))
-                                  (goto-char (match-beginning 1))
-                                  (forward-line 1)
-                                  (insert (make-string
-                                           (length (match-string 1)) ?\s))
-                                  (goto-char end)
-                                  (fill-region beg end)
-                                  (insert "\n"))))
-      (osx-dictionary-break-longlines)
-      ;;
-      ;; Put the formatted text in the help-buffer.
-      (let ((buf (current-buffer)))
-        (help-setup-xref (list #'osx-dictionary phrase)
-                         (called-interactively-p 'interactive))
-        (with-help-window (help-buffer)
-          (with-current-buffer (help-buffer)
-            (buffer-swap-text buf)))))))
+            nil nil word)
+           current-prefix-arg)))
+  (let ((text (funcall (if raw #'identity #'osx-dictionary-format-definition)
+                       (or (osx-dictionary-get-definition phrase)
+                           (user-error "No definition found for `%s'" phrase)))))
+    ;; Put the formatted text in the help-buffer.
+    (help-setup-xref (list #'osx-dictionary phrase raw)
+                     (called-interactively-p 'interactive))
+    (with-help-window (help-buffer)
+      (with-current-buffer standard-output
+        (insert text)))))
 
 ;;; Examples
 ;; (osx-dictionary "call")
