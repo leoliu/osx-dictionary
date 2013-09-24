@@ -28,6 +28,11 @@
 
 (eval-when-compile (require 'cl))
 
+(defcustom osx-dictionary-osxdict-program "osxdict.py"
+  "Name of the `osxdict.py' program."
+  :type 'string
+  :group 'tools)
+
 (defun osx-dictionary-get-definition (phrase)
   (if (fboundp 'osx-ds-get-definition)
       (osx-ds-get-definition phrase)
@@ -38,7 +43,10 @@
                    (with-current-buffer buffer
                      ;; Erase, or re-search-backward will succeed falsely.
                      (let ((inhibit-read-only t)) (erase-buffer)))
-                   (let ((proc (comint-exec-1 "osxdict" buffer "osxdict.py" nil)))
+                   (let ((proc (comint-exec-1 "osxdict"
+                                              buffer
+                                              osx-dictionary-osxdict-program
+                                              nil)))
                      (with-current-buffer (process-buffer proc)
                        (comint-mode)
                        (set-process-query-on-exit-flag proc nil)
@@ -48,7 +56,8 @@
                        (loop repeat 10
                              while (not (re-search-backward
                                          comint-prompt-regexp nil t))
-                             do (sit-for 0.1)))
+                             do (sit-for 0.1))
+                       (goto-char (point-max)))
                      proc))))
       (with-temp-buffer
         (comint-redirect-send-command-to-process

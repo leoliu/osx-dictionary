@@ -23,7 +23,7 @@ def main():
     try:
         print("Welcome! Press `C-c' or `C-d' to exit")
         while True:
-            phrase = raw_input("DICT> ")
+            phrase = (raw_input("DICT> ")).strip()
             if len(phrase) == 0:
                 continue
             definition = get_definition(phrase)
