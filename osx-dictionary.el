@@ -172,15 +172,40 @@
     (osx-dictionary-break-longlines)
     (buffer-string)))
 
+(eval-when-compile (require 'ispell)) ; for ispell-alternate-dictionary
+(defvar osx-dictionary-completion-table
+  (let ((file (eval-when-compile ispell-alternate-dictionary))
+        (cache))
+    (when (and file (file-readable-p file))
+      (completion-table-dynamic
+       (lambda (s)
+         (when (> (length s) 0)
+           (unless (equal (car cache) s)
+             (let ((ws (with-current-buffer (get-buffer-create " *words*")
+                         (when (zerop (buffer-size))
+                           (insert-file-contents file))
+                         (goto-char (point-min))
+                         (loop while (search-forward s nil t)
+                               collect (prog1
+                                           (buffer-substring (line-beginning-position)
+                                                             (line-end-position))
+                                         (end-of-line))))))
+               (setq cache (cons s ws))))
+           (cdr cache)))))))
+
+(defun osx-dictionary-read-word ()
+  (let* ((word (current-word nil t))
+         (prompt (format (if word "Phrase (default `%s'): " "Phrase: ")
+                         word)))
+    (if osx-dictionary-completion-table
+        (completing-read prompt osx-dictionary-completion-table
+                         nil nil nil nil word)
+      (read-string prompt nil nil word))))
+
 ;;;###autoload
 (defun osx-dictionary (phrase &optional raw)
   "Look up PHRASE in the builtin dictionary."
-  (interactive
-   (let ((word (current-word nil t)))
-     (list (read-string
-            (format (if word "Phrase (default `%s'): " "Phrase: ") word)
-            nil nil word)
-           current-prefix-arg)))
+  (interactive (list (osx-dictionary-read-word) current-prefix-arg))
   (let ((text (funcall (if raw #'identity #'osx-dictionary-format-definition)
                        (or (osx-dictionary-get-definition phrase)
                            (user-error "No definition found for `%s'" phrase)))))
