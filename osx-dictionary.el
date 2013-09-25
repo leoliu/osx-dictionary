@@ -180,7 +180,7 @@
       (completion-table-dynamic
        (lambda (s)
          (when (> (length s) 0)
-           (unless (equal (car cache) s)
+           (unless (and (car cache) (string-prefix-p (car cache) s))
              (let ((ws (with-current-buffer (get-buffer-create " *words*")
                          (when (zerop (buffer-size))
                            (insert-file-contents file))
@@ -198,8 +198,11 @@
          (prompt (format (if word "Phrase (default `%s'): " "Phrase: ")
                          word)))
     (if osx-dictionary-completion-table
-        (completing-read prompt osx-dictionary-completion-table
-                         nil nil nil nil word)
+        ;; `initials' completion can be slow, test example: "ispe"
+        (let ((completion-styles (or (remove 'initials completion-styles)
+                                     '(basic))))
+          (completing-read prompt osx-dictionary-completion-table
+                           nil nil nil nil word))
       (read-string prompt nil nil word))))
 
 ;;;###autoload
