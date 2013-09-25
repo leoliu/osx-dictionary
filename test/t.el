@@ -29,7 +29,8 @@
   (fmakunbound 'osx-ds-get-definition))
 
 (ert-deftest test-osx-dictionary-format-definition ()
-  (let ((files (directory-files default-directory t "\\.txt\\'")))
+  (let ((files (directory-files default-directory t
+                                "\\`[0-9][0-9].*\\.txt\\'")))
     (dolist (f files)
       (let ((phrase (substring (file-name-sans-extension
                                 (file-name-nondirectory f)) 2)))

@@ -3,7 +3,7 @@
 ;; Copyright (C) 2013  Leo Liu
 
 ;; Author: Leo Liu <sdl.web@gmail.com>
-;; Version: 0.6
+;; Version: 1.0
 ;; Keywords: tools
 ;; Created: 2013-09-23
 
@@ -146,7 +146,8 @@
              (goto-char (match-beginning 0)))
          (let ((end (copy-marker end t)))
            (when (and (equal (match-string 2) ":")
-                      (eq (char-after (1+ end)) ?\())
+                      (or (eq (char-after (1+ end)) ?\()
+                          (looking-at-p "\nSee also")))
              (move-marker end (line-end-position 2)))
            (goto-char (match-beginning 1))
            (forward-line 1)
