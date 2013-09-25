@@ -86,14 +86,16 @@
       (forward-line 1))
     (delete-trailing-whitespace)))
 
-(defun osx-dictionary-fontify (re face &optional sub fn)
+(defun osx-dictionary-fontify (re face &optional sub fn anchor)
   (goto-char (point-min))
-  (let ((sub (or sub 0)))
-    (while (re-search-forward re nil t)
-      (when face
-        (put-text-property (match-beginning sub) (match-end sub) 'face face))
-      (when fn
-        (funcall fn (match-beginning 0) (match-end 0))))))
+  (when (or (not anchor) (re-search-forward anchor nil t))
+    (let ((sub (or sub 0)))
+      (while (re-search-forward re nil t)
+        (when face
+          (put-text-property (match-beginning sub) (match-end sub)
+                             'face face))
+        (when fn
+          (funcall fn (match-beginning 0) (match-end 0)))))))
 
 (defun osx-dictionary-open (phrase)
   (let ((uri (format "dict://%s" phrase)))
@@ -152,6 +154,20 @@
            (goto-char end)
            (fill-region beg end)
            (insert "\n")))))
+    (osx-dictionary-fontify "\\(?:.\\|\n\\)+?\\(\n, *\\|\\'\\)"
+                            nil nil
+                            (lambda (beg _end)
+                              (replace-match "" nil nil nil 1)
+                              (fill-region beg (point)))
+                            "DERIVATIVES")
+    ;; Ensure one blank line before DERIVATIVES.
+    (osx-dictionary-fontify "DERIVATIVES" nil nil
+                            (lambda (_beg _end)
+                              (forward-line -1)
+                              (unless (looking-at-p "^[ \t]*$")
+                                (end-of-line)
+                                (insert "\n"))
+                              (goto-char (point-max))))
     (osx-dictionary-break-longlines)
     (buffer-string)))
 
