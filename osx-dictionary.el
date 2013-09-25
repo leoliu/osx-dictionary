@@ -97,7 +97,10 @@
         (when fn
           (funcall fn (match-beginning 0) (match-end 0)))))))
 
+;;;###autoload
 (defun osx-dictionary-open (phrase)
+  "Look up PHRASE in Dictionary.app."
+  (interactive (list (osx-dictionary-read-word)))
   (let ((uri (format "dict://%s" phrase)))
     (if (fboundp 'do-applescript)
         (do-applescript
