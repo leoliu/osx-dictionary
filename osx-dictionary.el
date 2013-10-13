@@ -109,6 +109,14 @@
                   (url-encode-url uri))))
       (call-process "open" nil nil nil uri))))
 
+(defun osx-dictionary-speak (text)
+  (interactive (list (osx-dictionary-read-word)))
+  (if (fboundp 'do-applescript)
+      (do-applescript
+       (string-to-multibyte
+        (format "say %S without waiting until completion" text)))
+    (call-process "say" nil 0 nil text)))
+
 (defun osx-dictionary-format-definition (text)
   (with-temp-buffer
     (insert text)
@@ -215,6 +223,7 @@
   (let ((text (funcall (if raw #'identity #'osx-dictionary-format-definition)
                        (or (osx-dictionary-get-definition phrase)
                            (user-error "No definition found for `%s'" phrase)))))
+    (osx-dictionary-speak phrase)
     ;; Put the formatted text in the help-buffer.
     (help-setup-xref (list #'osx-dictionary phrase raw)
                      (called-interactively-p 'interactive))
