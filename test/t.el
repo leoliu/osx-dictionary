@@ -23,8 +23,7 @@
 (require 'osx-dictionary)
 
 (setq sentence-end-double-space nil)
-(setq osx-dictionary-osxdict-program
-      (expand-file-name "../osxdict.py"))
+(setq osx-dictionary-osxdict-program (expand-file-name "../osxdict"))
 (when (fboundp 'osx-ds-get-definition)
   (fmakunbound 'osx-ds-get-definition))
 

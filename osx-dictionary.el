@@ -22,14 +22,14 @@
 
 ;;; Commentary:
 
-;; Place osxdict.py in exec-path and M-x osx-dictionary RET.
+;; Place osxdict in exec-path and M-x osx-dictionary RET.
 
 ;;; Code:
 
 (eval-when-compile (require 'cl))
 
-(defcustom osx-dictionary-osxdict-program "osxdict.py"
-  "Name of the `osxdict.py' program."
+(defcustom osx-dictionary-osxdict-program "osxdict"
+  "Name of the `osxdict' program."
   :type 'string
   :group 'tools)
 
