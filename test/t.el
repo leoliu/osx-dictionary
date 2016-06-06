@@ -1,6 +1,6 @@
 ;;; t.el --- tests for osx-dictionary                -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2013  Leo Liu
+;; Copyright (C) 2013-2016  Leo Liu
 
 ;; Author: Leo Liu <sdl.web@gmail.com>
 ;; Keywords: maint
