@@ -135,23 +135,20 @@
 
 (eval-when-compile (require 'ispell)) ; for ispell-alternate-dictionary
 (defvar osx-dictionary-completion-table
-  (let ((file (eval-when-compile ispell-alternate-dictionary))
-        (cache))
+  (let ((file (eval-when-compile ispell-alternate-dictionary)))
     (when (and file (file-readable-p file))
-      (completion-table-dynamic
+      (completion-table-with-cache
        (lambda (s)
          (when (> (length s) 0)
-           (unless (and (car cache) (string-prefix-p (car cache) s))
-             (let ((ws (with-current-buffer (get-buffer-create " *words*")
-                         (when (zerop (buffer-size))
-                           (insert-file-contents file))
-                         (goto-char (point-min))
-                         (cl-loop while (search-forward s nil t) collect
-                                  (progn (end-of-line)
-                                         (buffer-substring (line-beginning-position)
-                                                           (line-end-position)))))))
-               (setq cache (cons s ws))))
-           (cdr cache)))))))
+           (with-current-buffer (get-buffer-create " *words*")
+             (when (zerop (buffer-size))
+               (insert-file-contents file))
+             (goto-char (point-min))
+             (cl-loop while (search-forward s nil t) collect
+                      (progn (end-of-line)
+                             (buffer-substring (line-beginning-position)
+                                               (line-end-position)))))))
+       t))))
 
 (defun osx-dictionary-read-word ()
   (let* ((word (current-word nil t))
